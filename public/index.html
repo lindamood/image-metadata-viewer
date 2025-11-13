@@ -3,82 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Metadata Viewer - IPTC & EXIF</title>
+    <title>Professional Image Metadata Viewer - IPTC & EXIF</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>📸 Image Metadata Viewer</h1>
-            <p class="subtitle">Upload an image to view its IPTC and EXIF metadata</p>
+            <h1>📸 Professional Image Metadata Viewer</h1>
+            <p class="subtitle">View, Edit, Validate & Export IPTC metadata with professional standards compliance</p>
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="single">Single Image</button>
+                <button class="mode-btn" data-mode="compare">Compare Images</button>
+            </div>
         </header>
 
         <main>
-            <!-- Upload Section -->
-            <div class="upload-section">
-                <div class="upload-area" id="uploadArea">
-                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <p class="upload-text">Drag & drop an image here or click to browse</p>
-                    <p class="upload-hint">Supports JPEG, PNG, and TIFF files (max 50MB)</p>
-                    <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png,image/tiff,image/tif" hidden>
+            <!-- Single Image Mode -->
+            <div id="singleMode" class="mode-content active">
+                <!-- Upload Section -->
+                <div class="upload-section">
+                    <div class="upload-area" id="uploadArea">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="upload-text">Drag & drop an image here or click to browse</p>
+                        <p class="upload-hint">Supports JPEG, PNG, and TIFF files (max 50MB)</p>
+                        <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png,image/tiff,image/tif" hidden>
+                    </div>
+
+                    <button id="uploadBtn" class="btn-primary" disabled>Upload & Analyze Image</button>
                 </div>
 
-                <button id="uploadBtn" class="btn-primary" disabled>Upload Image</button>
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Processing image and validating metadata...</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="results-section" style="display: none;">
+                    <div class="results-header">
+                        <h2>Metadata Analysis</h2>
+                        <p class="filename" id="filename"></p>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <button id="editModeBtn" class="btn-action">✏️ Edit Metadata</button>
+                            <button id="exportJsonBtn" class="btn-action">📥 Export JSON</button>
+                            <button id="exportCsvBtn" class="btn-action">📊 Export CSV</button>
+                            <button id="downloadBtn" class="btn-action" style="display: none;">💾 Download Image</button>
+                            <button id="uploadAnotherBtn" class="btn-secondary">📤 Upload Another</button>
+                        </div>
+                    </div>
+
+                    <!-- Validation Status -->
+                    <div id="validationSection" class="validation-section" style="display: none;">
+                        <h3 class="section-title">
+                            <span id="validationIcon"></span>
+                            IPTC Standards Validation
+                        </h3>
+                        <div id="validationContent" class="validation-content"></div>
+                    </div>
+
+                    <!-- Synchronization Status -->
+                    <div id="syncSection" class="sync-section" style="display: none;">
+                        <h3 class="section-title">
+                            <span id="syncIcon"></span>
+                            XMP/IIM Format Synchronization
+                        </h3>
+                        <div id="syncContent" class="sync-content"></div>
+                    </div>
+
+                    <!-- Multilingual Fields -->
+                    <div id="multilingualSection" class="metadata-section" style="display: none;">
+                        <h3 class="section-title">🌐 Multilingual Metadata</h3>
+                        <div id="multilingualContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- Edit Mode -->
+                    <div id="editSection" class="edit-section" style="display: none;">
+                        <h3 class="section-title">✏️ Edit Metadata</h3>
+                        <div class="edit-form" id="editForm">
+                            <div class="form-group">
+                                <label>Title</label>
+                                <input type="text" name="title" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea name="description" class="form-input" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Keywords (comma-separated)</label>
+                                <input type="text" name="keywords" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Creator/Photographer</label>
+                                <input type="text" name="creator" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Copyright</label>
+                                <input type="text" name="copyright" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Credit</label>
+                                <input type="text" name="credit" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Source</label>
+                                <input type="text" name="source" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" name="city" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>State/Province</label>
+                                <input type="text" name="state" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Country</label>
+                                <input type="text" name="country" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Instructions</label>
+                                <textarea name="instructions" class="form-input" rows="2"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Headline</label>
+                                <input type="text" name="headline" class="form-input">
+                            </div>
+                        </div>
+                        <div class="edit-actions">
+                            <button id="saveMetadataBtn" class="btn-primary">💾 Save Metadata to Image</button>
+                            <button id="cancelEditBtn" class="btn-secondary">❌ Cancel</button>
+                        </div>
+                    </div>
+
+                    <!-- Camera Information -->
+                    <div id="cameraSection" class="metadata-section">
+                        <h3 class="section-title">📷 Camera & Technical Data</h3>
+                        <div id="cameraContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- IPTC Metadata -->
+                    <div id="iptcSection" class="metadata-section">
+                        <h3 class="section-title">📝 IPTC Metadata</h3>
+                        <div id="iptcContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- Location Information -->
+                    <div id="locationSection" class="metadata-section" style="display: none;">
+                        <h3 class="section-title">📍 Location Information</h3>
+                        <div id="locationContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- Copyright Information -->
+                    <div id="copyrightSection" class="metadata-section" style="display: none;">
+                        <h3 class="section-title">© Copyright & Rights</h3>
+                        <div id="copyrightContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- EXIF Metadata -->
+                    <div id="exifSection" class="metadata-section">
+                        <h3 class="section-title">🔧 EXIF Metadata</h3>
+                        <div id="exifContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- XMP Metadata -->
+                    <div id="xmpSection" class="metadata-section" style="display: none;">
+                        <h3 class="section-title">🏷️ XMP Metadata</h3>
+                        <div id="xmpContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- IIM Metadata -->
+                    <div id="iimSection" class="metadata-section" style="display: none;">
+                        <h3 class="section-title">📋 IIM (Legacy) Metadata</h3>
+                        <div id="iimContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- Other Metadata -->
+                    <div id="otherSection" class="metadata-section" style="display: none;">
+                        <h3 class="section-title">📑 Other Metadata</h3>
+                        <div id="otherContent" class="metadata-content"></div>
+                    </div>
+
+                    <!-- No Metadata Message -->
+                    <div id="noMetadata" class="no-metadata" style="display: none;">
+                        <p>No metadata found in this image.</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Loading Indicator -->
-            <div id="loadingIndicator" class="loading" style="display: none;">
-                <div class="spinner"></div>
-                <p>Processing image...</p>
-            </div>
+            <!-- Compare Mode -->
+            <div id="compareMode" class="mode-content">
+                <div class="upload-section">
+                    <div class="upload-area" id="uploadAreaMultiple">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="upload-text">Upload 2-10 images to compare their metadata</p>
+                        <p class="upload-hint">Drag & drop multiple images or click to browse</p>
+                        <input type="file" id="fileInputMultiple" accept="image/jpeg,image/jpg,image/png,image/tiff,image/tif" multiple hidden>
+                    </div>
 
-            <!-- Error Message -->
-            <div id="errorMessage" class="error-message" style="display: none;"></div>
-
-            <!-- Results Section -->
-            <div id="resultsSection" class="results-section" style="display: none;">
-                <div class="results-header">
-                    <h2>Metadata Results</h2>
-                    <p class="filename" id="filename"></p>
+                    <button id="uploadMultipleBtn" class="btn-primary" disabled>Upload & Compare Images</button>
                 </div>
 
-                <!-- IPTC Metadata -->
-                <div id="iptcSection" class="metadata-section">
-                    <h3 class="section-title">IPTC Metadata</h3>
-                    <div id="iptcContent" class="metadata-content"></div>
+                <!-- Loading Indicator -->
+                <div id="loadingIndicatorCompare" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Processing and comparing images...</p>
                 </div>
 
-                <!-- EXIF Metadata -->
-                <div id="exifSection" class="metadata-section">
-                    <h3 class="section-title">EXIF Metadata</h3>
-                    <div id="exifContent" class="metadata-content"></div>
-                </div>
+                <!-- Error Message -->
+                <div id="errorMessageCompare" class="error-message" style="display: none;"></div>
 
-                <!-- XMP Metadata -->
-                <div id="xmpSection" class="metadata-section" style="display: none;">
-                    <h3 class="section-title">XMP Metadata</h3>
-                    <div id="xmpContent" class="metadata-content"></div>
-                </div>
+                <!-- Comparison Results -->
+                <div id="comparisonResults" class="comparison-results" style="display: none;">
+                    <div class="results-header">
+                        <h2>Metadata Comparison</h2>
+                        <div class="comparison-stats" id="comparisonStats"></div>
+                    </div>
 
-                <!-- Other Metadata -->
-                <div id="otherSection" class="metadata-section" style="display: none;">
-                    <h3 class="section-title">Other Metadata</h3>
-                    <div id="otherContent" class="metadata-content"></div>
-                </div>
+                    <div id="comparisonContent" class="comparison-content"></div>
 
-                <!-- No Metadata Message -->
-                <div id="noMetadata" class="no-metadata" style="display: none;">
-                    <p>No metadata found in this image.</p>
+                    <button id="compareAnotherBtn" class="btn-secondary">Compare Other Images</button>
                 </div>
-
-                <button id="uploadAnotherBtn" class="btn-secondary">Upload Another Image</button>
             </div>
         </main>
 
         <footer>
-            <p>Built for professional photographers to quickly view image metadata</p>
+            <p>Professional tool for photographers | Features: IPTC validation, XMP/IIM sync checking, metadata editing & export</p>
         </footer>
     </div>
 
