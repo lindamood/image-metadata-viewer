@@ -404,6 +404,7 @@ document.getElementById('saveMetadataBtn').addEventListener('click', async () =>
     const formData = new FormData(form);
     const metadata = {};
 
+    // Collect metadata from form
     for (const [key, value] of formData.entries()) {
         if (value.trim()) {
             // Split keywords by comma
@@ -415,7 +416,21 @@ document.getElementById('saveMetadataBtn').addEventListener('click', async () =>
         }
     }
 
+    // Check if there's any metadata to save
+    if (Object.keys(metadata).length === 0) {
+        alert('⚠️ Please enter at least one metadata field to save.');
+        return;
+    }
+
+    // Disable button and show loading state
+    const saveBtn = document.getElementById('saveMetadataBtn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = '💾 Saving...';
+
     try {
+        console.log('Saving metadata:', metadata);
+
         const response = await fetch('/save-metadata', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -428,12 +443,43 @@ document.getElementById('saveMetadataBtn').addEventListener('click', async () =>
             throw new Error(result.error || 'Failed to save metadata');
         }
 
-        alert('✅ Metadata saved successfully! You can now download the updated image.');
-        document.getElementById('downloadBtn').style.display = 'inline-block';
-        document.getElementById('editSection').style.display = 'none';
+        console.log('Save successful:', result);
+
+        // Show success message
+        const editSection = document.getElementById('editSection');
+        const successMsg = document.createElement('div');
+        successMsg.className = 'success-message';
+        successMsg.innerHTML = `
+            <strong>✅ Success!</strong> Metadata has been saved to the image.<br>
+            Click the <strong>"💾 Download Image"</strong> button below to download your updated file.
+        `;
+        editSection.insertBefore(successMsg, editSection.firstChild);
+
+        // Show download button prominently
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.style.display = 'inline-block';
+        downloadBtn.style.backgroundColor = '#22c55e';
+        downloadBtn.textContent = '💾 Download Image with Updated Metadata';
+
+        // Scroll to download button
+        downloadBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Hide edit form after a delay
+        setTimeout(() => {
+            editSection.style.display = 'none';
+            successMsg.remove();
+        }, 5000);
+
+        // Also show an alert for immediate feedback
+        alert('✅ Metadata saved successfully!\n\nClick the green "Download Image" button to get your updated file.');
 
     } catch (error) {
-        alert('❌ Error saving metadata: ' + error.message);
+        console.error('Save error:', error);
+        alert('❌ Error saving metadata:\n\n' + error.message + '\n\nPlease check the console for more details.');
+    } finally {
+        // Re-enable button
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
     }
 });
 

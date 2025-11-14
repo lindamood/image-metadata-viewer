@@ -185,12 +185,33 @@ app.post('/save-metadata', async (req, res) => {
     const originalPath = fileInfo.path;
     const outputPath = path.join(tempDir, `edited-${Date.now()}-${fileInfo.originalName}`);
 
-    // Prepare metadata for ExifTool
+    // Copy the file first
+    await fs.copyFile(originalPath, outputPath);
+
+    // Prepare metadata for ExifTool (writes to both XMP and IPTC for compatibility)
     const exiftoolMetadata = prepareMetadataForExifTool(metadata);
 
-    // Write metadata to a copy of the file
-    await fs.copyFile(originalPath, outputPath);
-    await exiftool.write(outputPath, exiftoolMetadata);
+    console.log('Writing metadata to image:', exiftoolMetadata);
+
+    // Write metadata using ExifTool
+    // The write method in exiftool-vendored needs proper tag formatting
+    try {
+      await exiftool.write(outputPath, exiftoolMetadata, ['-overwrite_original']);
+      console.log('Metadata successfully written to:', outputPath);
+    } catch (writeError) {
+      console.error('ExifTool write error:', writeError);
+      // Clean up the copied file if write fails
+      await fs.unlink(outputPath).catch(console.error);
+      throw new Error(`Failed to write metadata: ${writeError.message}`);
+    }
+
+    // Verify the metadata was written by reading it back
+    try {
+      const verifyMetadata = await exiftool.read(outputPath);
+      console.log('Verification - metadata written successfully');
+    } catch (verifyError) {
+      console.warn('Could not verify metadata write:', verifyError);
+    }
 
     // Update stored file path
     uploadedFiles.set(fileId, {
@@ -512,25 +533,76 @@ function checkXmpIimSync(metadata) {
 function prepareMetadataForExifTool(metadata) {
   const exiftoolTags = {};
 
-  // Map common fields to ExifTool tags
-  const fieldMapping = {
-    'title': 'XMP-dc:Title',
-    'description': 'XMP-dc:Description',
-    'keywords': 'XMP-dc:Subject',
-    'creator': 'XMP-dc:Creator',
-    'copyright': 'XMP-dc:Rights',
-    'credit': 'XMP-photoshop:Credit',
-    'source': 'XMP-photoshop:Source',
-    'city': 'XMP-photoshop:City',
-    'state': 'XMP-photoshop:State',
-    'country': 'XMP-photoshop:Country',
-    'instructions': 'XMP-photoshop:Instructions',
-    'headline': 'XMP-photoshop:Headline'
+  // Map fields to BOTH XMP and IPTC tags for maximum compatibility
+  // This ensures the metadata is written in multiple formats
+  const fieldMappings = {
+    'title': [
+      'XMP-dc:Title',
+      'IPTC:ObjectName',
+      'XMP-photoshop:Headline'
+    ],
+    'description': [
+      'XMP-dc:Description',
+      'IPTC:Caption-Abstract',
+      'EXIF:ImageDescription'
+    ],
+    'keywords': [
+      'XMP-dc:Subject',
+      'IPTC:Keywords'
+    ],
+    'creator': [
+      'XMP-dc:Creator',
+      'IPTC:By-line',
+      'EXIF:Artist'
+    ],
+    'copyright': [
+      'XMP-dc:Rights',
+      'IPTC:CopyrightNotice',
+      'EXIF:Copyright'
+    ],
+    'credit': [
+      'XMP-photoshop:Credit',
+      'IPTC:Credit'
+    ],
+    'source': [
+      'XMP-photoshop:Source',
+      'IPTC:Source'
+    ],
+    'city': [
+      'XMP-photoshop:City',
+      'IPTC:City'
+    ],
+    'state': [
+      'XMP-photoshop:State',
+      'IPTC:Province-State'
+    ],
+    'country': [
+      'XMP-photoshop:Country',
+      'IPTC:Country-PrimaryLocationName'
+    ],
+    'instructions': [
+      'XMP-photoshop:Instructions',
+      'IPTC:SpecialInstructions'
+    ],
+    'headline': [
+      'XMP-photoshop:Headline',
+      'IPTC:Headline'
+    ]
   };
 
+  // Write each metadata field to multiple tag locations
   for (const [key, value] of Object.entries(metadata)) {
-    const exiftoolKey = fieldMapping[key.toLowerCase()] || key;
-    exiftoolTags[exiftoolKey] = value;
+    const tags = fieldMappings[key.toLowerCase()];
+
+    if (tags) {
+      // Write to all mapped tags
+      for (const tag of tags) {
+        exiftoolTags[tag] = value;
+      }
+    } else {
+      // If no mapping exists, write as-is
+      exiftoolTags[key] = value;
+    }
   }
 
   return exiftoolTags;
