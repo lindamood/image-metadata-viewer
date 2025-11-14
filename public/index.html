@@ -86,7 +86,7 @@
                     <!-- Edit Mode -->
                     <div id="editSection" class="edit-section" style="display: none;">
                         <h3 class="section-title">✏️ Edit Metadata</h3>
-                        <div class="edit-form" id="editForm">
+                        <form class="edit-form" id="editForm" onsubmit="return false;">
                             <div class="form-group">
                                 <label>Title</label>
                                 <input type="text" name="title" class="form-input">
@@ -135,10 +135,10 @@
                                 <label>Headline</label>
                                 <input type="text" name="headline" class="form-input">
                             </div>
-                        </div>
+                        </form>
                         <div class="edit-actions">
-                            <button id="saveMetadataBtn" class="btn-primary">💾 Save Metadata to Image</button>
-                            <button id="cancelEditBtn" class="btn-secondary">❌ Cancel</button>
+                            <button type="button" id="saveMetadataBtn" class="btn-primary">💾 Save Metadata to Image</button>
+                            <button type="button" id="cancelEditBtn" class="btn-secondary">❌ Cancel</button>
                         </div>
                     </div>
 
